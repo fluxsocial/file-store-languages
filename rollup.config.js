@@ -6,7 +6,6 @@ import sveltePreprocess from 'svelte-preprocess';
 import postcss from "rollup-plugin-postcss";
 import { string } from 'rollup-plugin-string'
 import dna from '@perspect3vism/rollup-plugin-dna'
-import json from '@rollup/plugin-json';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -55,8 +54,7 @@ export default {
 			  }]
 			]
 		  }),
-		dna(),
-		json()
+		dna()
 	],
 	watch: {
 		clearScreen: false
