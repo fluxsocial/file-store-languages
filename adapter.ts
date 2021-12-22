@@ -1,10 +1,14 @@
-import type { Address, Expression, ExpressionAdapter, PublicSharing, LanguageContext, AgentService, HolochainLanguageDelegate } from "@perspect3vism/ad4m";
+import type {
+  Address, Expression, ExpressionAdapter, PublicSharing,
+  LanguageContext, AgentService
+} from "@perspect3vism/ad4m";
 import type { IPFS } from "ipfs-core-types";
 import type { Readable } from "stream";
 import axios from "axios";
-import https from "https";
+import { BUCKET_NAME, s3, UPLOAD_ENDPOINT } from "./config";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
-class SharedPerspectivePutAdapter implements PublicSharing {
+class FileStorePutAdapter implements PublicSharing {
   #agent: AgentService;
   #IPFS: IPFS;
 
@@ -13,54 +17,57 @@ class SharedPerspectivePutAdapter implements PublicSharing {
     this.#IPFS = context.IPFS;
   }
 
-  async createPublic(neighbourhood: object): Promise<Address> {
+  async createPublic(data: object): Promise<Address> {
     const agent = this.#agent;
-    const expression = agent.createSignedExpression(neighbourhood);
+    const expression = agent.createSignedExpression(data);
     const content = JSON.stringify(expression);
-    const addResult = await this.#IPFS.add(
+
+    const result = await this.#IPFS.add(
       { content },
       { onlyHash: true },
     );
-    const hash = addResult.cid.toString();
-
-    const httpsAgent = new https.Agent({
-      rejectUnauthorized: false
-    });
+    const hash = result.cid.toString();
+    
     const postData = {
       hash,
-      content,
+      content
     };
-    const postResult = await axios.post("https://bi8fgdofma.execute-api.us-west-2.amazonaws.com/dev/serverlessSetup/upload", postData, { httpsAgent });
+    const postResult = await axios.post(UPLOAD_ENDPOINT, postData);
     if (postResult.status != 200) {
-      console.error("Create neighbourhood error: ", postResult);
+      console.error("Upload content error: ", postResult);
     }
 
-    // @ts-ignore
     return hash as Address;
   }
 }
 
-export default class Adapter implements ExpressionAdapter {
-  #IPFS: IPFS;
+async function streamToString(stream: Readable): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const chunks: Uint8Array[] = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+  })
+}
 
+export default class Adapter implements ExpressionAdapter {
   putAdapter: PublicSharing;
 
   constructor(context: LanguageContext) {
-    this.#IPFS = context.IPFS;
-    this.putAdapter = new SharedPerspectivePutAdapter(context);
+    this.putAdapter = new FileStorePutAdapter(context);
   }
 
   async get(address: Address): Promise<Expression> {
     const cid = address.toString();
 
-    const httpsAgent = new https.Agent({
-      rejectUnauthorized: false
-    });
-    const getResult = await axios.get(`https://bi8fgdofma.execute-api.us-west-2.amazonaws.com/dev/flux-files/get?hash=${cid}`);
-    if (getResult.status != 200) {
-      console.error("Create neighbourhood error: ", getResult);
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: cid,
     }
-    
-    return JSON.parse(getResult.data);
+
+    const response = await s3.send(new GetObjectCommand(params));
+    const contents = await streamToString(response.Body as Readable);
+
+    return JSON.parse(contents);
   }
 }
