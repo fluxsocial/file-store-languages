@@ -5,3 +5,4 @@ node_modules
 !rollup.config.js
 !dna.js
 release
+.DS_Store
