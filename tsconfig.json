@@ -20,6 +20,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["*.ts"],
+  "include": ["src/*.ts"],
   "exclude": ["node_modules/*", "__sapper__/*", "public/*"]
 }
