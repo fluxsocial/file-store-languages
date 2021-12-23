@@ -12,5 +12,3 @@ export const s3 = new S3Client({
 });
 
 export const BUCKET_NAME = "flux";
-
-export const LANGUAGE_NAME = "file-store";

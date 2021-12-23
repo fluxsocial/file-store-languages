@@ -18,7 +18,8 @@
     "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
   },
   "include": ["src/*.ts"],
   "exclude": ["node_modules/*", "__sapper__/*", "public/*"]

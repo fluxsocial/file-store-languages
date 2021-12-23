@@ -7,6 +7,7 @@ import type { Readable } from "stream";
 import axios from "axios";
 import { BUCKET_NAME, s3, UPLOAD_ENDPOINT } from "./config";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { json_validate } from "./schema";
 
 class FileStorePutAdapter implements PublicSharing {
   #agent: AgentService;
@@ -18,6 +19,9 @@ class FileStorePutAdapter implements PublicSharing {
   }
 
   async createPublic(data: object): Promise<Address> {
+    if (!json_validate(JSON.stringify(data))) {
+      throw new Error("Data is not valid with JSON schema");
+    }
     const agent = this.#agent;
     const expression = agent.createSignedExpression(data);
     const content = JSON.stringify(expression);

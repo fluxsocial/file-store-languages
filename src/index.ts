@@ -1,6 +1,6 @@
 import type { Address, Language, LanguageContext, Interaction } from "@perspect3vism/ad4m";
 import Adapter from "./adapter";
-import { LANGUAGE_NAME } from "./config";
+import { LANGUAGE_NAME } from "./language_config";
 
 function interactions(expression: Address): Interaction[] {
   return [];
