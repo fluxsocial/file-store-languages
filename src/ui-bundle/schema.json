@@ -1,10 +1,34 @@
 {
-    "$id": "https://example.com/user.json",
-    "title": "DemoSchema",
-    "description": "A demo schema",
-    "type": "object",
-    "properties": {
-      "username": {"type": "string"}
+  "$id": "https://junto.foundation/uibundle.schema.json",
+  "title": "UIBundleSchema",
+  "description": "The UI bundle schema for flux",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "gitLink": { "type": "string" },
+    "params": {
+      "type": "array",
+      "items": { "type": "string" }
     },
-    "required": ["username"]
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "bundle": { "type": "string" }
+  },
+  "required": ["name", "description", "gitLink", "params", "events", "bundle"],
+  "$defs": {
+    "event": {
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string" },
+        "callbackDetails": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["eventName", "callbackDetails"]
+    }
+  }
 }

@@ -19,7 +19,7 @@ class FileStorePutAdapter implements PublicSharing {
   }
 
   async createPublic(data: object): Promise<Address> {
-    if (!json_validate(JSON.stringify(data))) {
+    if (!json_validate(data)) {
       throw new Error("Data is not valid with JSON schema");
     }
     const agent = this.#agent;
