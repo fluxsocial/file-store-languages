@@ -1,15 +1,12 @@
-import type {
-  Address, Expression, ExpressionAdapter, PublicSharing,
-  LanguageContext, AgentService
-} from "@perspect3vism/ad4m";
+import type { Address, Expression, ExpressionAdapter, PublicSharing, LanguageContext, AgentService, HolochainLanguageDelegate } from "@perspect3vism/ad4m";
 import type { IPFS } from "ipfs-core-types";
-import type { Readable } from "stream";
 import axios from "axios";
+import https from "https";
 import { BUCKET_NAME, s3, UPLOAD_ENDPOINT } from "./config";
+import type { Readable } from "stream";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { json_validate } from "./schema";
 
-class FileStorePutAdapter implements PublicSharing {
+class SharedPerspectivePutAdapter implements PublicSharing {
   #agent: AgentService;
   #IPFS: IPFS;
 
@@ -18,29 +15,33 @@ class FileStorePutAdapter implements PublicSharing {
     this.#IPFS = context.IPFS;
   }
 
-  async createPublic(data: object): Promise<Address> {
-    if (!json_validate(data)) {
-      throw new Error("Data is not valid with JSON schema");
-    }
+  async createPublic(neighbourhood: object): Promise<Address> {
     const agent = this.#agent;
-    const expression = agent.createSignedExpression(data);
+    const expression = agent.createSignedExpression(neighbourhood);
     const content = JSON.stringify(expression);
-
     const result = await this.#IPFS.add(
       { content },
       { onlyHash: true },
     );
     const hash = result.cid.toString();
-    
+
+    const httpsAgent = new https.Agent({
+      rejectUnauthorized: false
+    });
     const postData = {
       hash,
-      content
+      content,
     };
-    const postResult = await axios.post(UPLOAD_ENDPOINT, postData);
+    console.log("============ hash: ", hash);
+    console.log("============ has2h: ", hash);
+    const postResult = await axios.post(UPLOAD_ENDPOINT, postData, { httpsAgent });
+    console.log("============ post result: ", result);
+    console.log("============ post result2222: ", result);
     if (postResult.status != 200) {
-      console.error("Upload content error: ", postResult);
+      console.error("Create neighbourhood error: ", postResult);
     }
 
+    // @ts-ignore
     return hash as Address;
   }
 }
@@ -53,12 +54,14 @@ async function streamToString(stream: Readable): Promise<string> {
     stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
   })
 }
-
 export default class Adapter implements ExpressionAdapter {
+  #IPFS: IPFS;
+
   putAdapter: PublicSharing;
 
   constructor(context: LanguageContext) {
-    this.putAdapter = new FileStorePutAdapter(context);
+    this.#IPFS = context.IPFS;
+    this.putAdapter = new SharedPerspectivePutAdapter(context);
   }
 
   async get(address: Address): Promise<Expression> {
@@ -67,7 +70,7 @@ export default class Adapter implements ExpressionAdapter {
     const params = {
       Bucket: BUCKET_NAME,
       Key: cid,
-    }
+    };
 
     const response = await s3.send(new GetObjectCommand(params));
     const contents = await streamToString(response.Body as Readable);

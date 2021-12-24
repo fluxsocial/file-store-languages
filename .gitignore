@@ -1,8 +1,12 @@
-node_modules
+*.dna
+hc-dna/zomes/tests/node_modules
+hc-dna/.cargo
+hc-dna/target
+build/*
 
 *.js
 *.js.map
 !rollup.config.js
 !dna.js
-release
-.DS_Store
+
+node_modules
