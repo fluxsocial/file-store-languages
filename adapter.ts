@@ -6,6 +6,15 @@ import { BUCKET_NAME, s3, UPLOAD_ENDPOINT } from "./config";
 import type { Readable } from "stream";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 
+import Ajv from 'ajv';
+import * as schema from "./schema.json";
+
+function json_validate(data: object): boolean {
+    const ajv = new Ajv();
+    const validate_schema = ajv.compile(schema);
+
+    return validate_schema(data)
+}
 class SharedPerspectivePutAdapter implements PublicSharing {
   #agent: AgentService;
   #IPFS: IPFS;
@@ -15,9 +24,12 @@ class SharedPerspectivePutAdapter implements PublicSharing {
     this.#IPFS = context.IPFS;
   }
 
-  async createPublic(neighbourhood: object): Promise<Address> {
+  async createPublic(data: object): Promise<Address> {
+    if (!json_validate(data)) {
+      throw new Error("Data is not valid with JSON schema");
+    }
     const agent = this.#agent;
-    const expression = agent.createSignedExpression(neighbourhood);
+    const expression = agent.createSignedExpression(data);
     const content = JSON.stringify(expression);
     const result = await this.#IPFS.add(
       { content },
